@@ -1,0 +1,193 @@
+1.
+
+#include <stdio.h>
+
+int main() {
+    int previousReading, currentReading, unitsConsumed;
+    float totalBill = 0, surcharge = 0;
+    float rate1 = 3.00, rate2 = 5.00, rate3 = 7.00;
+    int fixedCharge = 50;
+    printf("Enter the previous meter reading: ");
+    scanf("%d", &previousReading);
+    printf("Enter the current meter reading: ");
+    scanf("%d", &currentReading);
+    unitsConsumed = currentReading - previousReading;
+    printf("Total units consumed: %d\n\n", unitsConsumed);
+    int slab1 = (unitsConsumed > 100) ? 100 : unitsConsumed;
+    totalBill += slab1 * rate1;
+    int slab2 = (unitsConsumed > 300) ? 200 : (unitsConsumed > 100) ? (unitsConsumed - 100) : 0;
+    totalBill += slab2 * rate2;
+    int slab3 = (unitsConsumed > 300) ? (unitsConsumed - 300) : 0;
+    totalBill += slab3 * rate3;
+    totalBill += fixedCharge;
+    if (totalBill > 1000) {
+        surcharge = totalBill * 0.10;
+        totalBill += surcharge;
+    }
+    printf("| Slab         | Rate   | Consumed | Cost     |\n");
+    printf("|--------------|--------|----------|----------|\n");
+    printf("| 1 (< 100)    | %.2f  | %8d | %8.2f |\n", rate1, slab1, slab1 * rate1);
+    printf("| 2 (101-300)  | %.2f  | %8d | %8.2f |\n", rate2, slab2, slab2 * rate2);
+    printf("| 3 (> 300)    | %.2f  | %8d | %8.2f |\n", rate3, slab3, slab3 * rate3);
+    printf("| Maintenance  | %.2f  |          | %8.2f |\n", (float)fixedCharge, (float)fixedCharge);
+    printf("| Surcharge    | 10%%    |          | %8.2f |\n", surcharge);
+    printf("|--------------|--------|----------|----------|\n");
+    printf("| Total Bill   |        |          | %8.2f |\n", totalBill);
+
+    return 0;
+}
+
+
+
+2.
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+void countWords(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error: Could not open file.\n");
+        exit(1);
+    }
+
+    int words = 0;
+    char ch, prev = '\0';
+
+    while ((ch = fgetc(file)) != EOF) {
+        if ((ch == ' ' || ch == '\n') && (prev != ' ' && prev != '\n')) {
+            words++;
+        }
+        prev = ch;
+    }
+    if (prev != ' ' && prev != '\n') {
+        words++;
+    }
+
+    fclose(file);
+    printf("Number of words: %d\n", words);
+}
+
+void countLines(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error: Could not open file.\n");
+        exit(1);
+    }
+
+    int lines = 0;
+    char ch;
+
+    while ((ch = fgetc(file)) != EOF) {
+        if (ch == '\n') {
+            lines++;
+        }
+    }
+
+    fclose(file);
+    printf("Number of lines: %d\n", lines);
+}
+
+void countCharacters(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error: Could not open file.\n");
+        exit(1);
+    }
+
+    int characters = 0;
+    char ch;
+
+    while ((ch = fgetc(file)) != EOF) {
+        characters++;
+    }
+
+    fclose(file);
+    printf("Number of characters: %d\n", characters);
+}
+
+int main() {
+    char filename[] = "testfile.txt";
+
+    pid_t pid1, pid2, pid3;
+
+    pid1 = fork();
+    if (pid1 == 0) {
+        countWords(filename);
+        exit(0);
+    } else {
+        pid2 = fork();
+        if (pid2 == 0) {
+            countLines(filename);
+            exit(0);
+        } else {
+            pid3 = fork();
+            if (pid3 == 0) {
+                countCharacters(filename);
+                exit(0);
+            }
+        }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        wait(NULL);
+    }
+
+    return 0;
+}
+
+
+
+
+
+3.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <pthread.h>
+#include <sys/wait.h>
+
+sem_t semaphore;
+
+void printSequence(int id) {
+    sem_wait(&semaphore);
+    for (int k = 0; k <= 9; k++) {
+        printf("%d ", 3 * k + id);
+    }
+    printf("\n");
+    sem_post(&semaphore);
+}
+
+int main() {
+    sem_init(&semaphore, 0, 1);
+
+    pid_t pid1, pid2, pid3;
+
+    pid1 = fork();
+    if (pid1 == 0) {
+        printSequence(1);
+        exit(0);
+    } else {
+        pid2 = fork();
+        if (pid2 == 0) {
+            printSequence(2);
+            exit(0);
+        } else {
+            pid3 = fork();
+            if (pid3 == 0) {
+                printSequence(3);
+                exit(0);
+            }
+        }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        wait(NULL);
+    }
+
+    sem_destroy(&semaphore);
+    return 0;
+}
