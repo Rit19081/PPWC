@@ -1,0 +1,131 @@
+1. create a text file
+temperatures.txt
+-7
+2
+3
+12
+
+C program
+
+#include <stdio.h>
+
+void convert_and_display_temperatures() {
+    FILE *file = fopen("temperatures.txt", "r");
+    if (!file) {
+        printf("Error: Could not open temperatures.txt\n");
+        return;
+    }
+
+    int temp_celsius, obs_no = 1;
+    printf("| Temp Obs | Temp (F) |  Status   |\n");
+    printf("|----------|----------|-----------|\n");
+
+    while (fscanf(file, "%d", &temp_celsius) != EOF) {
+        float temp_fahrenheit = (temp_celsius * 9.0 / 5.0) + 32.0;
+        char *status;
+
+        if (temp_fahrenheit < 23.0) {
+            status = "Below";
+        } else if (temp_fahrenheit <= 50.0) {
+            status = "Right";
+        } else {
+            status = "Above";
+        }
+
+        printf("| %8d | %8.1f | %9s |\n", obs_no++, temp_fahrenheit, status);
+    }
+
+    fclose(file);
+}
+
+int main() {
+    convert_and_display_temperatures();
+    return 0;
+}
+
+
+
+2.create a text file
+input.txt
+
+
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/wait.h>
+#include<fcntl.h>
+int main(){
+  open("input.txt",O_RDONLY);
+  char c;
+  while(read(3, &c,1) ==  1){
+    if(c >= 97 && c <= 122){
+      c = c-32;  
+    }
+    printf("%c",c);
+  }
+}
+
+
+3.
+
+
+#include <stdio.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+sem_t *id1, *id2, *id3;
+
+void print_pid() {
+    int pid = getpid();
+    char str[100];
+    sprintf(str, "My process id is: %d\n", pid);
+
+    for (int i = 0; i < strlen(str); i++) {
+        fprintf(stderr, "%c", str[i]); 
+        sleep(1);                     
+    }
+}
+
+int main() {
+    const char *n1 = "/t1";
+    const char *n2 = "/t2";
+    const char *n3 = "/t3";
+    id1 = sem_open(n1, O_CREAT, 0600, 1); 
+    id2 = sem_open(n2, O_CREAT, 0600, 0); 
+    id3 = sem_open(n3, O_CREAT, 0600, 0); 
+
+    for (int i = 0; i < 3; i++) {
+        int pid = fork();
+        if (pid == 0) { 
+            if (i == 0) { 
+                sem_wait(id1);
+                print_pid();
+                sem_post(id2);
+            } else if (i == 1) {
+                sem_wait(id2);
+                print_pid();
+                sem_post(id3);
+            } else if (i == 2) {
+                sem_wait(id3);
+                print_pid();
+            }
+            exit(EXIT_SUCCESS);
+        }
+        else{
+            wait(NULL);
+        }
+    }
+
+    
+    sem_close(id1);
+    sem_close(id2);
+    sem_close(id3);
+    sem_unlink(n1);
+    sem_unlink(n2);
+    sem_unlink(n3);
+
+    return 0;
+}
